@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+env:
+  REGISTRY: gnanalyticaregistry1.azurecr.io
+  IMAGE_NAME: messenger-backend
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -30,10 +34,11 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      # Optional deploy step: if you have an Azure Container App or Web App set up
-      # - name: Deploy to Azure Container App
-      #   uses: azure/webapps-deploy@v3
-      #   with:
-      #     app-name: <your-app-name>
-      #     images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-      #     publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+      - name: Deploy to Azure Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          acrName: gnanalyticaregistry1
+          containerAppName: gnanalytica-backend
+          resourceGroup: gnanalytica-messenger-rg
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          azureCredentials: ${{ secrets.AZURE_CREDENTIALS }}
