@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure Container Registry
+name: Build and Deploy to Azure Container App
 
 on:
   push:
@@ -8,6 +8,9 @@ on:
 env:
   REGISTRY: gnanalyticaregistry1.azurecr.io
   IMAGE_NAME: messenger-backend
+  RESOURCE_GROUP: gnanalytica-messenger-rg
+  CONTAINER_APP: gnanalytica-backend
+  ACR_NAME: gnanalyticaregistry1
 
 jobs:
   build-and-deploy:
@@ -37,8 +40,8 @@ jobs:
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          acrName: gnanalyticaregistry1
-          containerAppName: gnanalytica-backend
-          resourceGroup: gnanalytica-messenger-rg
+          acrName: ${{ env.ACR_NAME }}
+          containerAppName: ${{ env.CONTAINER_APP }}
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           azureCredentials: ${{ secrets.AZURE_CREDENTIALS }}
