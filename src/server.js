@@ -18,7 +18,16 @@ connectDB();
 const app = express();
 
 // ✅ Middleware
-app.use(cors({ origin: "*" })); // allow all origins for testing
+app.use(
+  cors({
+    origin: [
+      "https://proud-stone-0a644ec0f.3.azurestaticapps.net", // your deployed frontend
+      "http://localhost:3000" // keep for local dev
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // ✅ Request logger (helps debug)
