@@ -1,24 +1,25 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
+
 import {
   sendFriendRequest,
   getFriendRequests,
   acceptFriendRequest,
-  getFriends
+  getFriends,
 } from "../controllers/friendController.js";
 
 const router = express.Router();
 
-// Send request
-router.post("/request/:id", protect, sendFriendRequest);
+// Get list of friends
+router.get("/", protect, getFriends);
 
-// Incoming friend requests
+// Get incoming friend requests
 router.get("/requests", protect, getFriendRequests);
 
-// Accept request
-router.post("/accept/:id", protect, acceptFriendRequest);
+// Send a friend request
+router.post("/request/:id", protect, sendFriendRequest);
 
-// Final confirmed friends list
-router.get("/", protect, getFriends);
+// Accept a friend request
+router.post("/accept/:id", protect, acceptFriendRequest);
 
 export default router;

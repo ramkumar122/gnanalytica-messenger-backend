@@ -1,6 +1,8 @@
-// src/controllers/friendController.js
 import User from "../models/User.js";
 
+/**
+ * SEND FRIEND REQUEST
+ */
 export const sendFriendRequest = async (req, res) => {
   try {
     const senderId = req.user._id;
@@ -9,20 +11,29 @@ export const sendFriendRequest = async (req, res) => {
     if (senderId.toString() === receiverId)
       return res.status(400).json({ message: "You cannot add yourself" });
 
-    const receiver = await User.findById(receiverId);
     const sender = await User.findById(senderId);
+    const receiver = await User.findById(receiverId);
 
     if (!receiver)
       return res.status(404).json({ message: "User not found" });
 
+    // already friends?
     if (receiver.friends.includes(senderId))
       return res.status(400).json({ message: "Already friends" });
 
-    if (receiver.friendRequests.includes(senderId))
+    // already received?
+    if (receiver.receivedRequests.includes(senderId))
       return res.status(400).json({ message: "Request already sent" });
 
-    receiver.friendRequests.push(senderId);
+    // already sent the other way?
+    if (sender.receivedRequests.includes(receiverId))
+      return res.status(400).json({ message: "They already sent you a request" });
+
+    receiver.receivedRequests.push(senderId);
+    sender.sentRequests.push(receiverId);
+
     await receiver.save();
+    await sender.save();
 
     res.json({ message: "Friend request sent!" });
   } catch (err) {
@@ -32,13 +43,15 @@ export const sendFriendRequest = async (req, res) => {
 };
 
 
-// GET incoming friend requests
+/**
+ * GET INCOMING FRIEND REQUESTS
+ */
 export const getFriendRequests = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .populate("friendRequests", "name email avatar");
+      .populate("receivedRequests", "name email avatar");
 
-    res.json(user.friendRequests);
+    res.json(user.receivedRequests);
   } catch (err) {
     console.error("Get Requests Error:", err);
     res.status(500).json({ message: "Server error" });
@@ -46,11 +59,13 @@ export const getFriendRequests = async (req, res) => {
 };
 
 
-// Accept friend request
+/**
+ * ACCEPT FRIEND REQUEST
+ */
 export const acceptFriendRequest = async (req, res) => {
   try {
-    const receiverId = req.user._id;
-    const senderId = req.params.id;
+    const receiverId = req.user._id;     // the one accepting
+    const senderId = req.params.id;      // the one who originally sent request
 
     const receiver = await User.findById(receiverId);
     const sender = await User.findById(senderId);
@@ -58,12 +73,17 @@ export const acceptFriendRequest = async (req, res) => {
     if (!sender)
       return res.status(404).json({ message: "User not found" });
 
-    // remove from pending
-    receiver.friendRequests = receiver.friendRequests.filter(
-      (reqId) => reqId.toString() !== senderId
+    // Remove from receiver's pending
+    receiver.receivedRequests = receiver.receivedRequests.filter(
+      (id) => id.toString() !== senderId
     );
 
-    // add to friends list both ways
+    // Remove from sender's sent list
+    sender.sentRequests = sender.sentRequests.filter(
+      (id) => id.toString() !== receiverId.toString()
+    );
+
+    // Add to friends list (both ways)
     receiver.friends.push(senderId);
     sender.friends.push(receiverId);
 
@@ -75,10 +95,9 @@ export const acceptFriendRequest = async (req, res) => {
     console.error("Accept Request Error:", err);
     res.status(500).json({ message: "Server error" });
   }
+
 };
 
-
-// Get confirmed friends list
 export const getFriends = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
